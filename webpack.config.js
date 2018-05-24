@@ -3,6 +3,7 @@ const path = require('path');
 const webpack = require('webpack');
 
 //additional plugins
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const ImageminPlugin = require('imagemin-webpack-plugin').default;
@@ -11,28 +12,36 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 let config = {
 	context: path.resolve(__dirname, 'src'),
-	entry: [
-		'./js/index.js',
-		'./scss/style.scss'
-	],
+	entry: {
+		app: [
+			'./js/index.js',
+			'./scss/style.scss'
+		]
+	},
 	output : {
-		path: path.resolve(__dirname, './dist'),
-		filename: 'js/main.js',
-		publicPath: '../'
+		path: path.resolve(__dirname, 'dist'),
+		filename: './js/main.js'
 	},
 	devServer : {
 		overlay: true,
-		contentBase: './app'
+		contentBase: './app',
+		compress: true
 	},
-	//devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'eval-source-map',
 	module: {
 		rules: [
 			//JS ES2015
 			{
 				test: /\.js$/,
-				loader: 'babel-loader',
-				//exclude: 'node_modules/'
+				loader: 'babel-loader'
 			},
+			//HTML
+			{
+				test: /\.pug$/,
+				loader: 'pug-loader',
+				options: {
+					pretty: true
+				}
+			},			
 			//SCSS
 			{
 				test: /\.scss$/,
@@ -99,7 +108,6 @@ let config = {
 		new MiniCssExtractPlugin({
 			filename: "./css/style.css"
 		}),
-		new CleanWebpackPlugin(['dist']),
 		new CopyWebpackPlugin(
 			[
 				{ from: './img', to: 'img'}
@@ -109,18 +117,21 @@ let config = {
 					{ glob: 'svg/*'}
 				]
 			}
-		)
+		),
+		new HtmlWebpackPlugin({
+			template: './pug/index.pug'
+		})		
 	]	
 };
 
 //module.exports = config;
 
 module.exports = (env, options) => {
-	let production = options.mode === 'production';
-	config.devtool = production ? 'source-map' : 'eval-source-map';
+	let prod = options.mode === 'production';
+	config.devtool = prod ? 'source-map' : 'eval-source-map';
 
 	//Production only
-	if(production) {
+	if(prod) {
 		config.plugins.push(
 			new UglifyJsPlugin({
 				sourceMap: true
@@ -130,7 +141,8 @@ module.exports = (env, options) => {
 			}),
 			new webpack.LoaderOptionsPlugin({
 				minimize: true
-			})
+			}),
+			new CleanWebpackPlugin(['dist'])
 		)
 	}
 
